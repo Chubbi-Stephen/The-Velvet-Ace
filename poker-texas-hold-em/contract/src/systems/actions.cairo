@@ -17,6 +17,7 @@ pub mod actions {
     use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_contract_address};
     use crate::systems::interface::IActions;
     use crate::utils::deck::verify_game;
+    use crate::utils::game::MerkleTrait;
 
     pub const GAME: felt252 = 'GAME';
     pub const DECK: felt252 = 'DECK';
@@ -339,6 +340,18 @@ pub mod actions {
         fn resolve_round(ref self: ContractState, game_id: u64) {
             self._resolve_round(game_id);
         }
+
+        /// Verify a single card using merkle proof
+        /// This function can be used for individual card verification
+        fn verify_card(
+            self: @ContractState,
+            proof: Array<felt252>,
+            root: felt252,
+            card_hash: felt252,
+            index: usize
+        ) -> bool {
+            MerkleTrait::verify_v2(proof, root, card_hash, index)
+        }
     }
 
     #[generate_trait]
@@ -617,24 +630,33 @@ pub mod actions {
             community_cards: Array<Card>,
             verified: bool,
         ) { // resolve root
-        // check if verified, by the way.
-        // DO NOT DELETE.
-        // in the future, check if the game should be verifiable, else, users should use the
-        // submit card endpoint.
-        // TODO: call `resolve_game()`, and update the `resolve_game()` with its appropriate
-        // logic.
-        // if game is not verified, read funds in the id, and split toegther with contract
-        // accordingly.
-        // perhaps let `resolve_game()` take in a bool to assert that the game was resolved
-        // accordingly.
-        // write a new internal function `resolve_v2`
+            // check if verified, by the way.
+            // DO NOT DELETE.
+            // in the future, check if the game should be verifiable, else, users should use the
+            // submit card endpoint.
+            // TODO: call `resolve_game()`, and update the `resolve_game()` with its appropriate
+            // logic.
+            // if game is not verified, read funds in the id, and split toegther with contract
+            // accordingly.
+            // perhaps let `resolve_game()` take in a bool to assert that the game was resolved
+            // accordingly.
+            // write a new internal function `resolve_v2`
 
-        // assert that this game is valid
-        // NOTE: CALLER CAN BE ZERO, FOR NOW.
-        // check the game_params, if the game is verifiable
-        // else, users should use the `submit_card` endpoint.
-        // set both roots to zero in the `resolve_game`
-        // set round_in_progress to false, by the way.
+            // assert that this game is valid
+            // NOTE: CALLER CAN BE ZERO, FOR NOW.
+            // check the game_params, if the game is verifiable
+            // else, users should use the `submit_card` endpoint.
+            // set both roots to zero in the `resolve_game`
+            // set round_in_progress to false, by the way.
+
+            assert(verified, 'Game verification failed');
+
+            // Extract game_id from the first hand if available
+            if hands.len() > 0 {
+                let first_hand = hands.at(0);
+                let game_id = *first_hand.player; // Assuming player field contains the game reference
+                self._resolve_round(game_id);
+            }
         }
 
         fn _resolve_hands(

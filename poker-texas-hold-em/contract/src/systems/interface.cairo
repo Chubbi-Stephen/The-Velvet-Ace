@@ -57,4 +57,11 @@ trait IActions<TContractState> {
     fn get_game(self: @TContractState, game_id: u64) -> Game;
     fn set_alias(self: @TContractState, alias: felt252);
     fn resolve_round(ref self: TContractState, game_id: u64);
+    fn verify_card(
+        self: @TContractState,
+        proof: Array<felt252>,
+        root: felt252,
+        card_hash: felt252,
+        index: usize
+    ) -> bool;
 }
